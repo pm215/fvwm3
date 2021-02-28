@@ -2217,7 +2217,7 @@ void CMD_DesktopConfiguration(F_CMD_ARGS)
 		return;
 	}
 
-	if (strcmp(action, "global") == 0) {
+	if (strcasecmp(action, "global") == 0) {
 		/* If we're switching to global mode after coming out of per-monitor
 		 * mode, the desks won't be the same.  Fix this by switching
 		 * other monitor desks to be the same as the current monitor.
@@ -2237,7 +2237,7 @@ void CMD_DesktopConfiguration(F_CMD_ARGS)
 			free(cmd);
 		}
 		monitor_mode = MONITOR_TRACKING_G;
-	} else if (strcmp(action, "per-monitor") == 0)
+	} else if (strcasecmp(action, "per-monitor") == 0)
 		monitor_mode = MONITOR_TRACKING_M;
 	else {
 		fvwm_debug(__func__, "action not recognised");
