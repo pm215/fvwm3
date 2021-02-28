@@ -51,6 +51,8 @@ static void		 monitor_refresh_global(void);
 static struct monitor	*monitor_by_name(const char *);
 
 enum monitor_tracking monitor_mode;
+bool			 is_tracking_shared;
+DesktopsInfo		*shared_desktops;
 struct screen_infos	 screen_info_q;
 struct monitors		monitor_q;
 int randr_event;
@@ -296,7 +298,7 @@ monitor_assign_virtual(struct monitor *ref)
 {
 	struct monitor	*m;
 
-	if (monitor_mode == MONITOR_TRACKING_M)
+	if (monitor_mode == MONITOR_TRACKING_M || is_tracking_shared)
 		return;
 
 	TAILQ_FOREACH(m, &monitor_q, entry) {
@@ -504,6 +506,7 @@ void FScreenInit(Display *dpy)
 	XRRFreeScreenResources(res);
 
 	scan_screens(dpy);
+	is_tracking_shared = false;
 
 	TAILQ_FOREACH(m, &monitor_q, entry) {
 		m->Desktops = fxcalloc(1, sizeof *m->Desktops);
@@ -512,6 +515,11 @@ void FScreenInit(Display *dpy)
 		m->Desktops->desk = 0;
 		m->flags |= (MONITOR_NEW|MONITOR_ENABLED);
 	}
+
+	shared_desktops = fxcalloc(1, sizeof *m->Desktops);
+	shared_desktops->name = NULL;
+	shared_desktops->next = NULL;
+	shared_desktops->desk = 0;
 
 	monitor_check_primary();
 
