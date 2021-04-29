@@ -26,6 +26,7 @@
 #include "fvwm.h"
 #include "externs.h"
 #include "execcontext.h"
+#include "functions.h"
 #include "cursor.h"
 #include "bindings.h"
 #include "misc.h"
@@ -1763,6 +1764,9 @@ static int __place_window(
 		fw->Desk = (start_style.desk > -1) ?
 			start_style.desk - 1 : start_style.desk;
 		reason->desk.reason = reason->desk.sod_reason;
+
+		fprintf(stderr, "SETTING DESK (%s) -> %d\n", fw->name.name,
+		    fw->Desk);
 	}
 	else
 	{
@@ -1851,13 +1855,25 @@ static int __place_window(
 	/*  RBW - 11/02/1998  --  I dont. */
 	if (!win_opts->flags.do_override_ppos && !DO_NOT_SHOW_ON_MAP(fw))
 	{
-		struct monitor	*m = fw->m ? fw->m : monitor_get_current();
+		if (is_tracking_shared) {
+			char	*cmd;
 
-		if (m->virtual_scr.CurrentDesk != fw->Desk)
-		{
-			reason->desk.do_switch_desk = 1;
+			xasprintf(&cmd, "MoveToDesk %d", fw->Desk);
+			execute_function_override_window(NULL, NULL, cmd, 0, fw);
+			fprintf(stderr, "I moved a window using: %s\n", cmd);
+			free(cmd);
+
+			goto done;
+
+		} else {
+			struct monitor	*m = fw->m ? fw->m : monitor_get_current();
+
+			if (m->virtual_scr.CurrentDesk != fw->Desk)
+			{
+				reason->desk.do_switch_desk = 1;
+			}
+			goto_desk(fw->Desk, m);
 		}
-		goto_desk(fw->Desk, m);
 	}
 	/* Don't move viewport if SkipMapping, or if recapturing the window,
 	 * adjust the coordinates later. Otherwise, just switch to the target
@@ -1880,6 +1896,7 @@ static int __place_window(
 			if (!win_opts->flags.do_override_ppos &&
 			    !DO_NOT_SHOW_ON_MAP(fw))
 			{
+				fprintf(stderr, "MOVING VIEWPORT\n");
 				MoveViewport(m, px,py,True);
 				reason->page.do_switch_page = 1;
 			}
@@ -1909,6 +1926,7 @@ static int __place_window(
 			mode, win_opts, reason, pdeltax, pdeltay);
 	}
 
+done:
 	/* Check the desk here. */
 	if (!SUSE_START_ON_DESK(&pstyle->flags) &&
 		((!Restarting && Scr.flags.are_windows_captured)) &&
